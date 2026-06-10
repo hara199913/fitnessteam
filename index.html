@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MY FITNESS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:#f7f7f7;color:#111}
+input,select,button{font-family:inherit}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+#app{max-width:460px;margin:0 auto;padding:20px 16px;min-height:100vh}
+.inp{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:15px;font-weight:700;color:#111;outline:none}
+.inp:focus{border-color:#111}
+.inp::placeholder{color:#bbb;font-weight:400}
+.sel{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid #ddd;background:#fff;font-size:15px;font-weight:700;color:#111;cursor:pointer;outline:none}
+.btn-black{width:100%;padding:13px;border-radius:10px;border:none;background:#111;color:#fff;font-size:15px;font-weight:900;cursor:pointer}
+.btn-black:hover{background:#333}
+.btn-blue{width:100%;padding:13px;border-radius:10px;border:none;background:#1565c0;color:#fff;font-size:15px;font-weight:900;cursor:pointer}
+.btn-blue:hover{background:#1976d2}
+.btn-outline{padding:10px 18px;border-radius:10px;border:1.5px solid #222;background:#fff;color:#111;font-size:14px;font-weight:700;cursor:pointer}
+.btn-outline:hover{background:#f0f0f0}
+.back-btn{background:none;border:none;color:#666;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0;margin-bottom:20px}
+.card{background:#fff;border:1.5px solid #e8e8e8;border-radius:16px;padding:18px 16px;margin-bottom:14px}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;justify-content:center;z-index:100}
+.sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px;width:100%;max-width:460px;max-height:80vh;overflow-y:auto}
+.edit-btn{background:none;border:1.5px solid #ddd;border-radius:7px;color:#888;font-size:12px;font-weight:700;cursor:pointer;padding:4px 9px}
+.edit-btn:hover{border-color:#111;color:#111}
+.lbl{font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px}
+.suggest-item{padding:11px 14px;cursor:pointer;font-size:14px;font-weight:700;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;color:#111}
+.suggest-item:hover{background:#f5f5f5}
+.hist-row{padding:12px 14px;border-radius:10px;border:1.5px solid #eee;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fff}
+.hist-row:hover{background:#f9f9f9}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const FOOD_DB={"白米(炊いた)":1.68,"玄米(炊いた)":1.65,"食パン":2.64,"うどん(茹で)":1.05,"そば(茹で)":1.32,"パスタ(茹で)":1.49,"鶏胸肉(皮なし)":1.16,"鶏もも肉(皮なし)":1.27,"鶏ささみ":1.09,"豚ロース":2.63,"豚バラ":3.95,"牛もも肉":2.09,"牛ロース":3.80,"卵":1.51,"木綿豆腐":0.72,"絹豆腐":0.56,"納豆":2.00,"サーモン":2.09,"まぐろ(赤身)":1.25,"さば":2.47,"えび":0.91,"ブロッコリー":0.37,"キャベツ":0.23,"ほうれん草":0.20,"トマト":0.19,"きゅうり":0.14,"玉ねぎ":0.37,"にんじん":0.39,"じゃがいも":0.76,"バナナ":0.93,"りんご":0.54,"みかん":0.49,"いちご":0.34,"牛乳":0.67,"ヨーグルト(無糖)":0.62,"チーズ(プロセス)":3.13,"オリーブオイル":9.21,"バター":7.45,"マヨネーズ":7.03,"アーモンド":6.08,"くるみ":6.93,"ピーナッツ":5.62,"プロテイン(ホエイ)":3.80,"オートミール":3.80};
+const CAT_CFG={"胸":{color:"#e53935",bg:"#fff0f0",light:"#ffcdd2"},"背中":{color:"#1565c0",bg:"#f0f4ff",light:"#bbdefb"},"肩":{color:"#f9a825",bg:"#fffde7",light:"#fff9c4"},"三頭筋":{color:"#6a1b9a",bg:"#f9f0ff",light:"#e1bee7"},"二頭筋":{color:"#00838f",bg:"#e0f7fa",light:"#b2ebf2"},"足":{color:"#2e7d32",bg:"#f0fff4",light:"#c8e6c9"},"有酸素":{color:"#e65100",bg:"#fff3e0",light:"#ffe0b2"},"その他":{color:"#546e7a",bg:"#f5f7f8",light:"#cfd8dc"}};
+const CATS=Object.keys(CAT_CFG);
+const CAT_MET={"胸":3.5,"背中":3.5,"肩":3.0,"三頭筋":3.0,"二頭筋":3.0,"足":4.0,"有酸素":7.0,"その他":3.0};
+const WEIGHTS=[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200];
+
+const ls=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
+const lss=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
+const today=()=>new Date().toISOString().slice(0,10);
+const weekStart=d=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay());return dt.toISOString().slice(0,10);};
+const fmtM=(y,m)=>`${y}年${m+1}月`;
+const kcalToKg=k=>(k/7200).toFixed(2);
+const calcBurn=(cat,sets,reps,w)=>Math.round((CAT_MET[cat]||3)*60*Math.max(1,(sets*reps*(w>0?w:1))/200)/60);
+const calcBMR=(g,age,h,w)=>g==="male"?Math.round(88.362+13.397*w+4.799*h-5.677*age):Math.round(447.593+9.247*w+3.098*h-4.330*age);
+
+let state={
+  screen:"home", trainingCat:null,
+  workouts:ls("workouts_v7",{}), meals:ls("meals_v7",{}),
+  showCal:false, showHistory:false,
+  trCalMonth:{y:new Date().getFullYear(),m:new Date().getMonth()},
+  mealCalMonth:{y:new Date().getFullYear(),m:new Date().getMonth()},
+  exercise:"", sets:"", reps:"", weight:0,
+  foodQuery:"", selectedFood:"", grams:"",
+  editMeal:null, editWorkout:null,
+  bmrGender:"male", bmrAge:"", bmrHeight:"", bmrWeight:"", bmrManual:"", bmrMode:"calc",
+  manualName:"", manualKcal:"",
+  editEx:"", editSets:"", editReps:"", editWeight:0,
+  editMFood:"", editMKcal:"", editMGrams:""
+};
+
+const td=today();
+
+const getDayData=d=>{
+  const ms=state.meals[d]||[];
+  const intake=ms.filter(m=>m.type!=="burn").reduce((a,m)=>a+m.kcal,0);
+  const burn=ms.filter(m=>m.type==="burn").reduce((a,m)=>a+m.kcal,0);
+  return{intake,burn,net:intake-burn};
+};
+const getWeekData=()=>{
+  const ws=weekStart(td);let intake=0,burn=0;
+  for(let i=0;i<7;i++){const dt=new Date(ws);dt.setDate(dt.getDate()+i);const d=dt.toISOString().slice(0,10);if(d>td)break;const dd=getDayData(d);intake+=dd.intake;burn+=dd.burn;}
+  return{intake,burn,net:intake-burn};
+};
+const getPastExercises=cat=>{
+  const seen=new Set(),r=[];
+  Object.values(state.workouts).flat().forEach(w=>{if(w.cat===cat&&!seen.has(w.exercise)){seen.add(w.exercise);r.push(w);}});
+  return r;
+};
+const getCalCells=(monthState,src)=>{
+  const{y,m}=monthState;const days=new Date(y,m+1,0).getDate();const firstDow=new Date(y,m,1).getDay();
+  const cells=[];for(let i=0;i<firstDow;i++)cells.push(null);
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    if(src==="meal"){const dd=getDayData(ds);cells.push({d,ds,...dd});}
+    else{const cats=[...new Set((state.workouts[ds]||[]).map(w=>w.cat))];cells.push({d,ds,cats});}
+  }
+  return cells;
+};
+
+function render(){
+  document.getElementById("app").innerHTML=buildApp();
+  bindEvents();
+}
+
+function buildApp(){
+  const s=state;
+  if(s.screen==="home") return buildHome();
+  if(s.screen==="training") return buildTraining();
+  if(s.screen==="meal") return buildMeal();
+  return "";
+}
+
+function buildHome(){
+  const wd=getWeekData(); const dd=getDayData(td);
+  const todayWorkouts=state.workouts[td]||[];
+  const catBadges=CATS.map(c=>{const cnt=todayWorkouts.filter(w=>w.cat===c).length;return cnt>0?`<span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:${CAT_CFG[c].bg};color:${CAT_CFG[c].color};border:1.5px solid ${CAT_CFG[c].light}">${c} ${cnt}</span>`:"";}).join("");
+  return`
+  <p style="font-size:13px;font-weight:700;color:#999;letter-spacing:2px;margin-bottom:4px">MY FITNESS</p>
+  <h1 style="font-size:26px;font-weight:900;color:#111;margin-bottom:4px">Dashboard</h1>
+  <p style="font-size:13px;font-weight:700;color:#aaa;margin-bottom:24px">${td}</p>
+  <div style="background:#111;border-radius:16px;padding:18px 16px;margin-bottom:16px">
+    <p style="font-size:13px;font-weight:700;color:#aaa;letter-spacing:1px;margin-bottom:12px">WEEKLY SUMMARY</p>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px"><p style="font-size:11px;font-weight:700;color:#888;margin-bottom:3px">🍚 摂取</p><p style="font-size:15px;font-weight:900;color:#fff">${wd.intake.toLocaleString()} kcal</p></div>
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px"><p style="font-size:11px;font-weight:700;color:#888;margin-bottom:3px">💪 消費</p><p style="font-size:15px;font-weight:900;color:#4fc3f7">${wd.burn.toLocaleString()} kcal</p></div>
+      <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px"><p style="font-size:11px;font-weight:700;color:#888;margin-bottom:3px">週間収支</p><p style="font-size:13px;font-weight:900;color:${wd.net>0?"#ef9a9a":"#a5d6a7"}">${wd.net>0?"+":""}${wd.net.toLocaleString()} kcal</p><p style="font-size:10px;font-weight:700;color:${wd.net>0?"#ef9a9a":"#a5d6a7"}">(${wd.net>0?"+":""}${kcalToKg(wd.net)} kg)</p></div>
+    </div>
+  </div>
+  <div id="go-training" class="card" style="border-left:5px solid #111;cursor:pointer;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="width:44px;height:44px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;font-size:22px">💪</div>
+      <div style="flex:1"><p style="font-weight:900;font-size:17px;color:#111">トレーニング</p><p style="font-weight:700;font-size:13px;color:#888">今日: ${todayWorkouts.length}種目記録済み</p></div>
+      <i class="ti ti-chevron-right" style="color:#ccc;font-size:20px"></i>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">${catBadges}</div>
+  </div>
+  <div id="go-meal" class="card" style="border-left:5px solid #555;cursor:pointer">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:44px;height:44px;border-radius:10px;background:#555;display:flex;align-items:center;justify-content:center;font-size:22px">🍚</div>
+      <div style="flex:1"><p style="font-weight:900;font-size:17px;color:#111">食事管理</p><p style="font-weight:700;font-size:13px;color:#888">今日の収支: ${dd.net>0?"+":""}${dd.net.toLocaleString()} kcal (${dd.net>0?"+":""}${kcalToKg(dd.net)} kg)</p></div>
+      <i class="ti ti-chevron-right" style="color:#ccc;font-size:20px"></i>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1;background:#f7f7f7;border-radius:10px;padding:10px 14px"><p style="font-size:11px;font-weight:700;color:#999;margin-bottom:2px">🍚 摂取</p><p style="font-size:18px;font-weight:900;color:#111">${dd.intake.toLocaleString()}<span style="font-size:11px;font-weight:700"> kcal</span></p></div>
+      <div style="flex:1;background:#e8f4fd;border-radius:10px;padding:10px 14px"><p style="font-size:11px;font-weight:700;color:#1565c0;margin-bottom:2px">💪 消費</p><p style="font-size:18px;font-weight:900;color:#1565c0">${dd.burn.toLocaleString()}<span style="font-size:11px;font-weight:700"> kcal</span></p></div>
+    </div>
+  </div>`;
+}
+
+function buildTraining(){
+  const cat=state.trainingCat; const cfg=cat?CAT_CFG[cat]:null;
+  const catBtns=CATS.map(c=>{const a=state.trainingCat===c;const cf=CAT_CFG[c];return`<button class="cat-btn" data-cat="${c}" style="padding:9px 16px;border-radius:20px;cursor:pointer;font-size:14px;font-weight:700;border:2px solid ${a?cf.color:cf.light};background:${a?cf.color:cf.bg};color:${a?"#fff":cf.color}">${c}</button>`;}).join("");
+  const calCells=getCalCells(state.trCalMonth,"training");
+  const calHtml=calCells.map(cell=>{
+    if(!cell)return`<div></div>`;
+    const dots=(cell.cats||[]).map(c=>`<div title="${c}" style="width:8px;height:8px;border-radius:50%;background:${CAT_CFG[c]?.color||'#999'}"></div>`).join("");
+    const nm=cell.cats?.join(" ")||"";
+    return`<div style="border-radius:8px;padding:5px 3px;text-align:center;min-height:58px;background:${cell.cats?.length>0?"#f8f8f8":"#fafafa"};border:1px solid #eee">
+      <div style="font-size:12px;font-weight:700;color:${cell.ds===td?"#e53935":"#333"};margin-bottom:3px">${cell.d}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-bottom:2px">${dots}</div>
+      ${nm?`<div style="font-size:9px;font-weight:700;color:#999;line-height:1.3">${nm}</div>`:""}
+    </div>`;
+  }).join("");
+  const legend=CATS.map(c=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:${CAT_CFG[c].color}"><div style="width:8px;height:8px;border-radius:50%;background:${CAT_CFG[c].color}"></div>${c}</div>`).join("");
+  const burnPreview=(cat&&state.exercise&&state.sets&&state.reps)?`<div style="background:#e8f4fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><span>🔥</span><p style="font-size:14px;font-weight:700;color:#1565c0">推定消費: 約 ${calcBurn(cat,parseInt(state.sets)||1,parseInt(state.reps)||0,Number(state.weight))} kcal</p></div>`:"";
+  const addForm=cat?`
+  <div class="card" style="border-top:4px solid ${cfg.color}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:8px;background:${cfg.bg};display:flex;align-items:center;justify-content:center;font-size:18px">💪</div>
+        <p style="font-size:16px;font-weight:900;color:#111">${cat} — 記録追加</p>
+      </div>
+      ${getPastExercises(cat).length>0?`<button id="show-history" style="padding:7px 12px;border-radius:8px;border:1.5px solid ${cfg.color};background:${cfg.bg};color:${cfg.color};font-size:12px;font-weight:700;cursor:pointer">📋 履歴</button>`:""}
+    </div>
+    <label class="lbl">種目名</label>
+    <input class="inp" id="inp-exercise" value="${state.exercise}" placeholder="例: ベンチプレス" style="margin-bottom:12px">
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div style="flex:1"><label class="lbl">セット</label><input class="inp" id="inp-sets" type="number" value="${state.sets}" placeholder="3"></div>
+      <div style="flex:1"><label class="lbl">回数</label><input class="inp" id="inp-reps" type="number" value="${state.reps}" placeholder="10"></div>
+      <div style="flex:1"><label class="lbl">重量(kg)</label>
+        <input class="inp" id="inp-weight" type="number" value="${state.weight||""}" placeholder="kg" list="wlist" min="0" step="0.5">
+        <datalist id="wlist">${WEIGHTS.map(w=>`<option value="${w}">`).join("")}</datalist>
+      </div>
+    </div>
+    ${burnPreview}
+    <button class="btn-black" id="add-workout">+ 追加する</button>
+  </div>`:"";;
+  const todayRecs=(state.workouts[td]||[]).filter(w=>w.cat===cat);
+  const recList=cat&&todayRecs.length>0?`
+  <p style="font-size:14px;font-weight:900;color:#555;margin-bottom:10px">本日の記録 — ${cat}</p>
+  ${todayRecs.map((w,i)=>`
+  <div class="card" style="border-left:4px solid ${cfg.color};padding:14px 16px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:${cfg.color};flex-shrink:0">${i+1}</div>
+        <div><p style="font-weight:900;font-size:15px;color:#111;margin-bottom:2px">${w.exercise}</p>
+        <p style="font-weight:700;font-size:13px;color:#666">${w.sets}s × ${w.reps}rep <span style="color:${cfg.color};font-weight:900">/ ${w.weight}kg</span><span style="color:#1565c0;font-weight:700;margin-left:8px">🔥${w.burnKcal||0}kcal</span></p></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+        <button class="edit-btn edit-workout-btn" data-id="${w.id}">編集</button>
+        <button class="del-workout-btn" data-id="${w.id}" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px">×</button>
+      </div>
+    </div>
+  </div>`).join("")}`:""; 
+
+  const histSheet=state.showHistory&&cat?`
+  <div class="overlay" id="overlay-history">
+    <div class="sheet">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <p style="font-size:17px;font-weight:900;color:#111">${cat} — 過去の種目</p>
+        <button id="close-history" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer">×</button>
+      </div>
+      <p style="font-size:13px;font-weight:700;color:#aaa;margin-bottom:12px">タップでフォームに入力</p>
+      ${getPastExercises(cat).map(w=>`
+      <div class="hist-row" data-ex="${w.exercise}" data-sets="${w.sets}" data-reps="${w.reps}" data-weight="${w.weight}">
+        <div><p style="font-weight:900;font-size:15px;color:#111;margin-bottom:2px">${w.exercise}</p><p style="font-size:13px;font-weight:700;color:#888">${w.sets}s × ${w.reps}rep / ${w.weight}kg</p></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="quick-add-btn" data-ex="${w.exercise}" data-sets="${w.sets}" data-reps="${w.reps}" data-weight="${w.weight}" style="padding:7px 14px;border-radius:8px;border:none;background:${cfg.color};color:#fff;font-size:13px;font-weight:700;cursor:pointer">すぐ追加</button>
+        </div>
+      </div>`).join("")}
+    </div>
+  </div>`:"";
+
+  const editWSheet=state.editWorkout?buildEditWorkoutSheet(state.editWorkout):"";
+
+  return`
+  <button class="back-btn" id="back-home"><i class="ti ti-arrow-left"></i> ホームへ</button>
+  <h2 style="font-size:22px;font-weight:900;color:#111;margin-bottom:20px">💪 トレーニング</h2>
+  <p style="font-size:13px;font-weight:700;color:#555;margin-bottom:10px">カテゴリを選択</p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">${catBtns}</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <p style="font-size:15px;font-weight:900;color:#111">トレーニングカレンダー</p>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-outline" id="tr-cal-prev" style="padding:6px 12px;font-size:13px">‹</button>
+        <span style="font-weight:900;font-size:14px;min-width:80px;text-align:center">${fmtM(state.trCalMonth.y,state.trCalMonth.m)}</span>
+        <button class="btn-outline" id="tr-cal-next" style="padding:6px 12px;font-size:13px">›</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">${["日","月","火","水","木","金","土"].map(d=>`<div style="text-align:center;font-size:11px;font-weight:700;color:#aaa;padding:3px 0">${d}</div>`).join("")}</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${calHtml}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${legend}</div>
+  </div>
+  ${addForm}
+  ${recList}
+  ${histSheet}
+  ${editWSheet}`;
+}
+
+function buildEditWorkoutSheet(w){
+  const cfg=CAT_CFG[w.cat]||{};
+  return`<div class="overlay" id="overlay-edit-workout">
+    <div class="sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <p style="font-size:17px;font-weight:900;color:#111">トレーニングを編集</p>
+        <button id="close-edit-workout" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer">×</button>
+      </div>
+      <label class="lbl">種目名</label>
+      <input class="inp" id="edit-ex" value="${w.exercise}" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="flex:1"><label class="lbl">セット</label><input class="inp" id="edit-sets" type="number" value="${w.sets}"></div>
+        <div style="flex:1"><label class="lbl">回数</label><input class="inp" id="edit-reps" type="number" value="${w.reps}"></div>
+        <div style="flex:1"><label class="lbl">重量(kg)</label>
+          <input class="inp" id="edit-weight" type="number" value="${w.weight}" list="wlist-edit" min="0" step="0.5">
+          <datalist id="wlist-edit">${WEIGHTS.map(w=>`<option value="${w}">`).join("")}</datalist>
+        </div>
+      </div>
+      <button class="btn-black" id="save-edit-workout">保存する</button>
+    </div>
+  </div>`;
+}
+
+function buildMeal(){
+  const dd=getDayData(td);
+  const ms=state.meals[td]||[];
+  const bmrAdded=ms.filter(m=>m.type==="burn"&&m.bmr).length>0;
+  const bmrVal=(state.bmrAge&&state.bmrHeight&&state.bmrWeight)?calcBMR(state.bmrGender,parseInt(state.bmrAge),parseInt(state.bmrHeight),parseFloat(state.bmrWeight)):null;
+
+  if(state.showCal){
+    const cells=getCalCells(state.mealCalMonth,"meal");
+    const calHtml=cells.map(cell=>{
+      if(!cell)return`<div></div>`;
+      const nk=cell?(parseFloat(kcalToKg(cell.net))):0;
+      return`<div style="border-radius:8px;padding:5px 2px;text-align:center;min-height:72px;background:#fafafa;border:1px solid #eee">
+        <div style="font-size:11px;font-weight:700;color:${cell.ds===td?"#e53935":"#333"};margin-bottom:2px">${cell.d}</div>
+        ${cell.intake>0?`<div style="font-size:9px;font-weight:900;color:#2e7d32;background:#f0fff4;border-radius:3px;padding:1px 2px;margin-bottom:2px">${cell.intake.toLocaleString()}</div>`:""}
+        ${cell.burn>0?`<div style="font-size:9px;font-weight:900;color:#1565c0;background:#e8f4fd;border-radius:3px;padding:1px 2px;margin-bottom:2px">${cell.burn.toLocaleString()}</div>`:""}
+        ${(cell.intake>0||cell.burn>0)?`<div style="font-size:9px;font-weight:900;color:${nk>0?"#e53935":"#2e7d32"};background:${nk>0?"#fff0f0":"#f0fff4"};border-radius:3px;padding:1px 2px">${nk>0?"+":""}${nk}kg</div>`:""}
+      </div>`;
+    }).join("");
+    return`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button class="back-btn" id="back-meal-cal" style="margin-bottom:0"><i class="ti ti-arrow-left"></i> 戻る</button>
+      <h2 style="font-size:20px;font-weight:900;color:#111">カロリーカレンダー</h2>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:10px;font-size:12px;font-weight:700"><span>🍚 緑=摂取</span><span>💪 青=消費</span><span>収支=±kg</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <button class="btn-outline" id="meal-cal-prev" style="padding:8px 14px">‹</button>
+      <span style="flex:1;text-align:center;font-weight:900;font-size:15px">${fmtM(state.mealCalMonth.y,state.mealCalMonth.m)}</span>
+      <button class="btn-outline" id="meal-cal-next" style="padding:8px 14px">›</button>
+    </div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">${["日","月","火","水","木","金","土"].map(d=>`<div style="text-align:center;font-size:11px;font-weight:700;color:#aaa;padding:3px 0">${d}</div>`).join("")}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${calHtml}</div>
+    </div>
+    <p style="font-size:12px;font-weight:700;color:#aaa;margin-top:10px;text-align:center">緑=摂取 青=消費 赤/緑=±kg収支</p>`;
+  }
+
+  const foodList=ms.filter(m=>m.type!=="burn").map(m=>`
+  <div class="card" style="margin-bottom:8px;padding:13px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1"><p style="font-weight:900;font-size:15px;color:#111;margin-bottom:2px">${m.food}</p><p style="font-weight:700;font-size:13px;color:#888">${m.grams!=null?m.grams+"g " : ""}<span style="color:#2e7d32;font-weight:900">→ ${m.kcal} kcal</span></p></div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+        <button class="edit-btn edit-meal-btn" data-id="${m.id}">編集</button>
+        <button class="del-meal-btn" data-id="${m.id}" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px">×</button>
+      </div>
+    </div>
+  </div>`).join("");
+
+  const burnList=ms.filter(m=>m.type==="burn").map(m=>`
+  <div style="background:#e8f4fd;border:1.5px solid #bbdefb;border-radius:12px;padding:13px 16px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1"><p style="font-weight:900;font-size:15px;color:#1565c0;margin-bottom:2px">${m.food}</p><p style="font-weight:700;font-size:13px;color:#1976d2">消費 ${m.kcal} kcal</p></div>
+      <button class="del-meal-btn" data-id="${m.id}" style="background:none;border:none;color:#aac;cursor:pointer;font-size:20px;padding:2px 6px">×</button>
+    </div>
+  </div>`).join("");
+
+  const editMSheet=state.editMeal?buildEditMealSheet(state.editMeal):"";
+  const sugg=state.foodQuery.length>0?Object.keys(FOOD_DB).filter(k=>k.includes(state.foodQuery)).slice(0,6):[];
+
+  return`
+  <button class="back-btn" id="back-home"><i class="ti ti-arrow-left"></i> ホームへ</button>
+  <h2 style="font-size:22px;font-weight:900;color:#111;margin-bottom:16px">🍚 食事管理</h2>
+  <div style="display:flex;gap:10px;margin-bottom:10px">
+    <div style="flex:1" class="card" style="text-align:center;padding:14px 10px;margin-bottom:0"><p style="font-size:12px;font-weight:700;color:#999;margin-bottom:4px">🍚 摂取</p><p style="font-size:20px;font-weight:900;color:#111">${dd.intake.toLocaleString()}<span style="font-size:12px;font-weight:700"> kcal</span></p></div>
+    <div style="flex:1;background:#e8f4fd;border:1.5px solid #bbdefb;border-radius:16px;padding:14px 10px;text-align:center"><p style="font-size:12px;font-weight:700;color:#1565c0;margin-bottom:4px">💪 消費</p><p style="font-size:20px;font-weight:900;color:#1565c0">${dd.burn.toLocaleString()}<span style="font-size:12px;font-weight:700"> kcal</span></p></div>
+  </div>
+  <div class="card" style="background:${dd.net>0?"#fff5f5":"#f0fff4"};border:1.5px solid ${dd.net>0?"#ffcdd2":"#c8e6c9"};padding:14px 18px;margin-bottom:14px">
+    <p style="font-size:12px;font-weight:700;color:#888;margin-bottom:4px">今日の収支</p>
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <p style="font-size:26px;font-weight:900;color:${dd.net>0?"#e53935":"#2e7d32"}">${dd.net>0?"+":""}${dd.net.toLocaleString()} kcal</p>
+      <p style="font-size:15px;font-weight:700;color:${dd.net>0?"#e53935":"#2e7d32"}">(${dd.net>0?"+":""}${kcalToKg(dd.net)} kg)</p>
+    </div>
+    <p style="font-size:13px;font-weight:700;color:#aaa;margin-top:4px">${dd.net>0?"摂取超過":"消費超過 — 良い調子です！"}</p>
+  </div>
+  <button id="show-cal" class="btn-outline" style="width:100%;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px"><i class="ti ti-calendar"></i> カレンダーで確認</button>
+
+  <div class="card" style="border-top:4px solid #1565c0">
+    <p style="font-size:16px;font-weight:900;color:#111;margin-bottom:4px">🔥 基礎代謝を追加</p>
+    <p style="font-size:12px;font-weight:700;color:#aaa;margin-bottom:12px">その日の基礎代謝を消費カロリーに追加します</p>
+    ${bmrAdded?`<div style="background:#e8f4fd;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#1565c0">✓ 本日の基礎代謝は記録済みです</div>`:""}
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="bmr-mode-calc" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid ${state.bmrMode==="calc"?"#1565c0":"#ddd"};background:${state.bmrMode==="calc"?"#e8f4fd":"#fff"};color:${state.bmrMode==="calc"?"#1565c0":"#888"};font-weight:700;font-size:13px;cursor:pointer">自動計算</button>
+      <button id="bmr-mode-manual" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid ${state.bmrMode==="manual"?"#1565c0":"#ddd"};background:${state.bmrMode==="manual"?"#e8f4fd":"#fff"};color:${state.bmrMode==="manual"?"#1565c0":"#888"};font-weight:700;font-size:13px;cursor:pointer">手入力</button>
+    </div>
+    ${state.bmrMode==="calc"?`
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button id="bmr-male" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid ${state.bmrGender==="male"?"#111":"#ddd"};background:${state.bmrGender==="male"?"#111":"#fff"};color:${state.bmrGender==="male"?"#fff":"#888"};font-weight:700;font-size:13px;cursor:pointer">男性</button>
+      <button id="bmr-female" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid ${state.bmrGender==="female"?"#111":"#ddd"};background:${state.bmrGender==="female"?"#111":"#fff"};color:${state.bmrGender==="female"?"#fff":"#888"};font-weight:700;font-size:13px;cursor:pointer">女性</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1"><label class="lbl">年齢</label><input class="inp" id="bmr-age" type="number" value="${state.bmrAge}" placeholder="25"></div>
+      <div style="flex:1"><label class="lbl">身長(cm)</label><input class="inp" id="bmr-height" type="number" value="${state.bmrHeight}" placeholder="170"></div>
+      <div style="flex:1"><label class="lbl">体重(kg)</label><input class="inp" id="bmr-weight" type="number" value="${state.bmrWeight}" placeholder="65"></div>
+    </div>
+    ${bmrVal?`<div style="background:#e8f4fd;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:8px;align-items:center"><span>🔥</span><p style="font-size:14px;font-weight:700;color:#1565c0">基礎代謝: 約 ${bmrVal.toLocaleString()} kcal/日</p></div>`:""}
+    `:`
+    <div style="margin-bottom:12px"><label class="lbl">基礎代謝 (kcal)</label><input class="inp" id="bmr-manual" type="number" value="${state.bmrManual}" placeholder="例: 1650"></div>
+    `}
+    <button class="btn-blue" id="add-bmr">消費カロリーに追加</button>
+  </div>
+
+  <div class="card" style="border-top:4px solid #888">
+    <p style="font-size:16px;font-weight:900;color:#111;margin-bottom:14px">カロリーを直接入力</p>
+    <div style="margin-bottom:12px"><label class="lbl">食事名・メモ</label><input class="inp" id="manual-name" value="${state.manualName}" placeholder="例: プロテインバー、外食ランチ"></div>
+    <div style="margin-bottom:14px"><label class="lbl">カロリー (kcal)</label><input class="inp" id="manual-kcal" type="number" value="${state.manualKcal}" placeholder="例: 350">
+    ${state.manualKcal?`<p style="font-size:14px;font-weight:900;color:#2e7d32;margin-top:6px">→ ${parseInt(state.manualKcal)||0} kcal</p>`:""}</div>
+    <button class="btn-black" id="add-manual">+ 追加する</button>
+  </div>
+
+  <div class="card">
+    <p style="font-size:16px;font-weight:900;color:#111;margin-bottom:14px">食材から追加</p>
+    <div style="margin-bottom:12px;position:relative">
+      <label class="lbl">食材名で検索</label>
+      <input class="inp" id="food-query" value="${state.foodQuery}" placeholder="例: 鶏胸肉">
+      ${sugg.length>0?`<div style="position:absolute;z-index:10;background:#fff;border:1.5px solid #ddd;border-radius:10px;width:100%;overflow:hidden;top:100%;margin-top:4px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+        ${sugg.map(f=>`<div class="suggest-item" data-food="${f}"><span>${f}</span><span style="color:#aaa;font-weight:400">${FOOD_DB[f]}kcal/g</span></div>`).join("")}
+      </div>`:""}
+    </div>
+    ${state.selectedFood?`
+    <div style="margin-bottom:12px"><label class="lbl">グラム数</label><input class="inp" id="inp-grams" type="number" value="${state.grams}" placeholder="100">
+    ${state.grams?`<p style="font-size:14px;font-weight:900;color:#2e7d32;margin-top:6px">→ ${Math.round(FOOD_DB[state.selectedFood]*parseFloat(state.grams))} kcal</p>`:""}</div>`:""}
+    <button class="btn-black" id="add-meal">+ 追加する</button>
+  </div>
+
+  ${ms.filter(m=>m.type!=="burn").length>0?`<p style="font-size:14px;font-weight:900;color:#555;margin-bottom:10px">本日の食事内訳</p>${foodList}`:""}
+  ${ms.filter(m=>m.type==="burn").length>0?`<p style="font-size:14px;font-weight:900;color:#1565c0;margin-bottom:10px">💪 消費カロリー内訳</p>${burnList}`:""}
+  ${editMSheet}`;
+}
+
+function buildEditMealSheet(m){
+  const hasGrams=m.grams!=null;
+  return`<div class="overlay" id="overlay-edit-meal">
+    <div class="sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <p style="font-size:17px;font-weight:900;color:#111">食事記録を編集</p>
+        <button id="close-edit-meal" style="background:none;border:none;font-size:22px;color:#aaa;cursor:pointer">×</button>
+      </div>
+      <label class="lbl">食事名</label>
+      <input class="inp" id="edit-mfood" value="${m.food}" style="margin-bottom:12px">
+      ${hasGrams?`<div style="margin-bottom:12px"><label class="lbl">グラム数</label><input class="inp" id="edit-mgrams" type="number" value="${m.grams}"></div>`:`<div style="margin-bottom:12px"><label class="lbl">カロリー (kcal)</label><input class="inp" id="edit-mkcal" type="number" value="${m.kcal}"></div>`}
+      <button class="btn-black" id="save-edit-meal">保存する</button>
+    </div>
+  </div>`;
+}
+
+function bindEvents(){
+  const on=(id,ev,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener(ev,fn);};
+  const onAll=(sel,ev,fn)=>document.querySelectorAll(sel).forEach(el=>el.addEventListener(ev,fn));
+
+  on("go-training","click",()=>{state.screen="training";render();});
+  on("go-meal","click",()=>{state.screen="meal";render();});
+  on("back-home","click",()=>{state.screen="home";render();});
+  on("back-meal-cal","click",()=>{state.showCal=false;render();});
+  on("show-cal","click",()=>{state.showCal=true;render();});
+
+  on("tr-cal-prev","click",()=>{const d=new Date(state.trCalMonth.y,state.trCalMonth.m-1,1);state.trCalMonth={y:d.getFullYear(),m:d.getMonth()};render();});
+  on("tr-cal-next","click",()=>{const d=new Date(state.trCalMonth.y,state.trCalMonth.m+1,1);state.trCalMonth={y:d.getFullYear(),m:d.getMonth()};render();});
+  on("meal-cal-prev","click",()=>{const d=new Date(state.mealCalMonth.y,state.mealCalMonth.m-1,1);state.mealCalMonth={y:d.getFullYear(),m:d.getMonth()};render();});
+  on("meal-cal-next","click",()=>{const d=new Date(state.mealCalMonth.y,state.mealCalMonth.m+1,1);state.mealCalMonth={y:d.getFullYear(),m:d.getMonth()};render();});
+
+  onAll(".cat-btn","click",e=>{state.trainingCat=e.target.dataset.cat;render();});
+
+  ["inp-exercise","inp-sets","inp-reps","inp-weight"].forEach(id=>{
+    on(id,"input",e=>{
+      if(id==="inp-exercise")state.exercise=e.target.value;
+      else if(id==="inp-sets")state.sets=e.target.value;
+      else if(id==="inp-reps")state.reps=e.target.value;
+      else if(id==="inp-weight")state.weight=e.target.value===""?0:Number(e.target.value);
+      render();
+    });
+  });
+
+  on("add-workout","click",()=>{
+    const cat=state.trainingCat;
+    if(!cat||!state.exercise)return;
+    const s=parseInt(state.sets)||1,r=parseInt(state.reps)||0,w=Number(state.weight);
+    const burnKcal=calcBurn(cat,s,r,w);
+    const id=Date.now();
+    state.workouts[td]=[...(state.workouts[td]||[]),{id,cat,exercise:state.exercise,sets:s,reps:r,weight:w,burnKcal}];
+    state.meals[td]=[...(state.meals[td]||[]),{id:id+1,type:"burn",food:`${cat}(${state.exercise})`,kcal:burnKcal}];
+    lss("workouts_v7",state.workouts);lss("meals_v7",state.meals);
+    state.exercise="";state.sets="";state.reps="";state.weight=0;
+    render();
+  });
+
+  on("show-history","click",()=>{state.showHistory=true;render();});
+  on("close-history","click",()=>{state.showHistory=false;render();});
+  onAll(".hist-row","click",e=>{
+    const r=e.currentTarget;
+    state.exercise=r.dataset.ex;state.sets=r.dataset.sets;state.reps=r.dataset.reps;state.weight=Number(r.dataset.weight);
+    state.showHistory=false;render();
+  });
+  onAll(".quick-add-btn","click",e=>{
+    e.stopPropagation();
+    const cat=state.trainingCat;
+    const ex=e.currentTarget.dataset.ex,s=parseInt(e.currentTarget.dataset.sets)||1,r=parseInt(e.currentTarget.dataset.reps)||0,w=Number(e.currentTarget.dataset.weight);
+    const burnKcal=calcBurn(cat,s,r,w);const id=Date.now();
+    state.workouts[td]=[...(state.workouts[td]||[]),{id,cat,exercise:ex,sets:s,reps:r,weight:w,burnKcal}];
+    state.meals[td]=[...(state.meals[td]||[]),{id:id+1,type:"burn",food:`${cat}(${ex})`,kcal:burnKcal}];
+    lss("workouts_v7",state.workouts);lss("meals_v7",state.meals);
+    state.showHistory=false;render();
+  });
+
+  onAll(".del-workout-btn","click",e=>{
+    const id=Number(e.currentTarget.dataset.id);
+    state.workouts[td]=(state.workouts[td]||[]).filter(w=>w.id!==id);
+    lss("workouts_v7",state.workouts);render();
+  });
+  onAll(".edit-workout-btn","click",e=>{
+    const id=Number(e.currentTarget.dataset.id);
+    state.editWorkout=(state.workouts[td]||[]).find(w=>w.id===id)||null;
+    render();
+  });
+  on("close-edit-workout","click",()=>{state.editWorkout=null;render();});
+  on("save-edit-workout","click",()=>{
+    const w=state.editWorkout;if(!w)return;
+    const ex=document.getElementById("edit-ex")?.value||w.exercise;
+    const s=parseInt(document.getElementById("edit-sets")?.value)||w.sets;
+    const r=parseInt(document.getElementById("edit-reps")?.value)||w.reps;
+    const wt=Number(document.getElementById("edit-weight")?.value)||w.weight;
+    const burnKcal=calcBurn(w.cat,s,r,wt);
+    const oldLabel=`${w.cat}(${w.exercise})`;const newLabel=`${w.cat}(${ex})`;
+    state.workouts[td]=(state.workouts[td]||[]).map(x=>x.id===w.id?{...x,exercise:ex,sets:s,reps:r,weight:wt,burnKcal}:x);
+    state.meals[td]=(state.meals[td]||[]).map(m=>m.type==="burn"&&m.food===oldLabel?{...m,food:newLabel,kcal:burnKcal}:m);
+    lss("workouts_v7",state.workouts);lss("meals_v7",state.meals);
+    state.editWorkout=null;render();
+  });
+
+  on("bmr-mode-calc","click",()=>{state.bmrMode="calc";render();});
+  on("bmr-mode-manual","click",()=>{state.bmrMode="manual";render();});
+  on("bmr-male","click",()=>{state.bmrGender="male";render();});
+  on("bmr-female","click",()=>{state.bmrGender="female";render();});
+  ["bmr-age","bmr-height","bmr-weight"].forEach(id=>on(id,"input",e=>{
+    if(id==="bmr-age")state.bmrAge=e.target.value;
+    else if(id==="bmr-height")state.bmrHeight=e.target.value;
+    else state.bmrWeight=e.target.value;
+    render();
+  }));
+  on("bmr-manual","input",e=>{state.bmrManual=e.target.value;});
+  on("add-bmr","click",()=>{
+    let kcal=state.bmrMode==="calc"?
+      (state.bmrAge&&state.bmrHeight&&state.bmrWeight?calcBMR(state.bmrGender,parseInt(state.bmrAge),parseInt(state.bmrHeight),parseFloat(state.bmrWeight)):null):
+      parseInt(document.getElementById("bmr-manual")?.value);
+    if(!kcal)return;
+    state.meals[td]=[...(state.meals[td]||[]),{id:Date.now(),type:"burn",bmr:true,food:"基礎代謝",kcal}];
+    lss("meals_v7",state.meals);render();
+  });
+
+  on("manual-name","input",e=>{state.manualName=e.target.value;});
+  on("manual-kcal","input",e=>{state.manualKcal=e.target.value;render();});
+  on("add-manual","click",()=>{
+    const name=document.getElementById("manual-name")?.value||state.manualName;
+    const kcal=parseInt(document.getElementById("manual-kcal")?.value||state.manualKcal);
+    if(!name||!kcal)return;
+    state.meals[td]=[...(state.meals[td]||[]),{id:Date.now(),type:"food",food:name,grams:null,kcal}];
+    lss("meals_v7",state.meals);state.manualName="";state.manualKcal="";render();
+  });
+
+  on("food-query","input",e=>{state.foodQuery=e.target.value;state.selectedFood="";render();});
+  onAll(".suggest-item","click",e=>{state.selectedFood=e.currentTarget.dataset.food;state.foodQuery=e.currentTarget.dataset.food;render();});
+  on("inp-grams","input",e=>{state.grams=e.target.value;render();});
+  on("add-meal","click",()=>{
+    if(!state.selectedFood||!state.grams)return;
+    const kcal=Math.round(FOOD_DB[state.selectedFood]*parseFloat(state.grams));
+    state.meals[td]=[...(state.meals[td]||[]),{id:Date.now(),type:"food",food:state.selectedFood,grams:parseFloat(state.grams),kcal}];
+    lss("meals_v7",state.meals);state.foodQuery="";state.selectedFood="";state.grams="";render();
+  });
+
+  onAll(".del-meal-btn","click",e=>{
+    const id=Number(e.currentTarget.dataset.id);
+    state.meals[td]=(state.meals[td]||[]).filter(m=>m.id!==id);
+    lss("meals_v7",state.meals);render();
+  });
+  onAll(".edit-meal-btn","click",e=>{
+    const id=Number(e.currentTarget.dataset.id);
+    state.editMeal=(state.meals[td]||[]).find(m=>m.id===id)||null;
+    render();
+  });
+  on("close-edit-meal","click",()=>{state.editMeal=null;render();});
+  on("save-edit-meal","click",()=>{
+    const m=state.editMeal;if(!m)return;
+    const food=document.getElementById("edit-mfood")?.value||m.food;
+    let kcal=m.kcal;
+    if(m.grams!=null){const g=parseFloat(document.getElementById("edit-mgrams")?.value||m.grams);kcal=Math.round(FOOD_DB[m.food]*g);state.editMeal={...m,grams:g};}
+    else{kcal=parseInt(document.getElementById("edit-mkcal")?.value)||m.kcal;}
+    state.meals[td]=(state.meals[td]||[]).map(x=>x.id===m.id?{...x,food,kcal}:x);
+    lss("meals_v7",state.meals);state.editMeal=null;render();
+  });
+
+  on("overlay-history","click",e=>{if(e.target.id==="overlay-history"){state.showHistory=false;render();}});
+  on("overlay-edit-workout","click",e=>{if(e.target.id==="overlay-edit-workout"){state.editWorkout=null;render();}});
+  on("overlay-edit-meal","click",e=>{if(e.target.id==="overlay-edit-meal"){state.editMeal=null;render();}});
+}
+
+render();
+</script>
+</body>
+</html>
